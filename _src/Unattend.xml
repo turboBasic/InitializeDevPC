@@ -1,0 +1,88 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<unattend xmlns="urn:schemas-microsoft-com:unattend">
+  <settings pass="specialize">
+    <component name="Microsoft-Windows-UnattendedJoin" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    </component>
+    <component name="Microsoft-Windows-Deployment" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+      <RunSynchronous>
+        <RunSynchronousCommand wcm:action="add">
+          <Description>Enable Administrator</Description>
+          <Order>1</Order>
+          <Path>net user administrator /active:yes</Path>
+        </RunSynchronousCommand>
+        <RunSynchronousCommand wcm:action="add">
+          <Description>Enable script execution</Description>
+          <Order>2</Order>
+          <Path>%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe -noProfile -command "Set-ExecutionPolicy -executionPolicy RemoteSigned -scope LocalMachine -force" </Path>
+        </RunSynchronousCommand>
+        <RunSynchronousCommand wcm:action="add">
+          <Description>Move swap file</Description>
+          <Order>3</Order>
+          <Path>%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe -noProfile -command 'Set-ItemProperty -path "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management" -name "PagingFiles" -value "d:\pagefile.sys 0 0" ' </Path>
+        </RunSynchronousCommand>
+        <RunSynchronousCommand wcm:action="add">
+          <Description>Other PC initialization tasks</Description>
+          <Order>4</Order>
+          <Path>%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe -noProfile -file "c:\bb\Invoke-1stBoot.ps1" </Path>
+        </RunSynchronousCommand>
+      </RunSynchronous>
+    </component>
+    <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+      <ComputerName>devBox</ComputerName>
+    </component>
+  </settings>
+  <settings pass="oobeSystem">
+    <component name="Microsoft-Windows-International-Core" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+      <InputLocale>en-US;uk-UA</InputLocale>
+      <SystemLocale>uk-UA</SystemLocale>
+      <UILanguage>en-US</UILanguage>
+      <UserLocale>en-US</UserLocale>
+    </component>
+    <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" language="neutral" versionScope="nonSxS" xmlns:wcm="http://schemas.microsoft.com/WMIConfig/2002/State" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+      <OOBE>
+        <HideEULAPage>true</HideEULAPage>
+        <HideWirelessSetupInOOBE>true</HideWirelessSetupInOOBE>
+        <NetworkLocation>Work</NetworkLocation>
+        <ProtectYourPC>1</ProtectYourPC>
+        <SkipUserOOBE>true</SkipUserOOBE>
+        <SkipMachineOOBE>true</SkipMachineOOBE>
+      </OOBE>
+      <TimeZone>FLE Standard Time</TimeZone>
+      <UserAccounts>
+        <AdministratorPassword>
+          <Value>bgBzAHAAYQBzAHMAMQAhAEEAZABtAGkAbgBpAHMAdAByAGEAdABvAHIAUABhAHMAcwB3AG8AcgBkAA==</Value>
+          <PlainText>false</PlainText>
+        </AdministratorPassword>
+        <LocalAccounts>
+          <LocalAccount wcm:action="add">
+            <Password>
+              <Value>bgBzAHAAYQBzAHMAMQAhAFAAYQBzAHMAdwBvAHIAZAA=</Value>
+              <PlainText>false</PlainText>
+            </Password>
+            <DisplayName>Tester</DisplayName>
+            <Group>Administrators</Group>
+            <Name>Tester</Name>
+          </LocalAccount>
+        </LocalAccounts>
+      </UserAccounts>
+      <RegisteredOrganization>ƋБ</RegisteredOrganization>
+      <RegisteredOwner>mao 毛</RegisteredOwner>
+      <AutoLogon>
+        <Password>
+          <Value>nspass1!</Value>
+        </Password>
+        <LogonCount>100</LogonCount>
+        <Username>administrator</Username>
+        <Enabled>true</Enabled>
+      </AutoLogon>
+      <FirstLogonCommands>
+        <SynchronousCommand wcm:action="add">
+          <Description>Initialize PackageManagement and module providers</Description>
+          <Order>1</Order>
+          <CommandLine>%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe -noProfile -file "c:\bb\initialize-modules.ps1" </CommandLine>
+          <RequiresUserInput>false</RequiresUserInput>
+        </SynchronousCommand>
+      </FirstLogonCommands>
+    </component>
+  </settings>
+</unattend>
