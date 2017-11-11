@@ -1,4 +1,6 @@
-﻿    [CmdletBinding(
+﻿function Install-ChocolateyPackage {
+
+    [CmdletBinding(
         SupportsShouldProcess,
         PositionalBinding = $false,
         ConfirmImpact = 'Medium'
@@ -46,6 +48,7 @@
 
 	    foreach ($1package in $package) {
             $1package | Out-String | Write-Verbose
+
             if ($1package.GetType().Name -eq 'String') {
                 $command = "Install-Package -provider ChocolateyGet -force -verbose -name $1package"
             }
@@ -65,7 +68,7 @@
                     foreach ($option in $normalizedOptions) 
                     {
                         if ( $option.Remove(0,2) -notIn $allOptions ) {
-                            "Install-ChocolateyPackages(): Unknown option in $($1package.Name): '$option' " | Write-Warning
+                            "Install-ChocolateyPackage(): Unknown option in $($1package.Name): '$option' " | Write-Warning
                         } else {
                             $command += ' ' + $option
                         }
@@ -83,12 +86,10 @@
                             $_
                         }
                     }
-                    "Install-ChocolateyPackages(): Unknown package attribute(s) in $($1package.Name): `'$( $unknownAttributes -join ', ')`' " | Write-Warning
+                    "Install-ChocolateyPackage(): Unknown package attribute(s) in $($1package.Name): `'$( $unknownAttributes -join ', ')`' " | Write-Warning
                 }
             }
 
-            # Install-Package -name $_ -provider ChocolateyGet -force -verbose
-            #Invoke-Expression -command $command
             if ($shouldProcess) {
                 Invoke-Expression -command $command
             } else {
@@ -98,3 +99,7 @@
     }
 
     END {}
+
+}
+
+

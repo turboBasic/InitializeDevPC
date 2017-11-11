@@ -54,4 +54,4 @@ $paramsVHD = @{
     verbose =       $True
 }
 
-#Convert-Wim2VHD @paramsVHD
+Convert-Wim2VHD @paramsVHD
