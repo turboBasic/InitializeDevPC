@@ -25,7 +25,7 @@
         @{
             Description = 'Initialize PackageManagement and module providers'
             Order = 1
-            CommandLine = '%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe -noProfile -file "c:\bb\initialize-modules.ps1" '
+            CommandLine = '%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe -noExit -file "c:\bb\initialize-modules.ps1" '
         }
     )
     enableAdministrator = $True

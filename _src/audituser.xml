@@ -6,10 +6,6 @@
                 <RunSynchronousCommand wcm:action="add">
                     <Path>%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe -noProfile -file c:\bb\ttt-init.ps1</Path>
                     <Order>1</Order>
-                    <Credentials>
-                        <Username>Administrator</Username>
-                        <Password>nspass1!</Password>
-                    </Credentials>
                     <Description>no</Description>
                 </RunSynchronousCommand>
             </RunSynchronous>

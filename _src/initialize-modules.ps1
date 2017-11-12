@@ -1,7 +1,7 @@
 ﻿$Debug = $True
 $VerbosePreference = 'Continue'
 
-. c:\bb\install-chocolateyPackages.ps1
+. c:\bb\lib\install-packages.ps1
 $Packages = Import-PowerShellDataFile c:\bb\packages.psd1
 
 Start-Transcript -path C:\bb\setup_transcript.txt -IncludeInvocationHeader -Append
@@ -26,7 +26,8 @@ Start-Transcript -path C:\bb\setup_transcript.txt -IncludeInvocationHeader -Appe
     Set-KeyboardLayout
 
     if (-not( Test-Path $profile)) {
-        New-Item -path $profile -itemType File -force
+        New-Item -path (Split-Path -parent $profile) -itemType Directory -errorAction SilentlyContinue
+        New-Item -path $profile -itemType File
         $dummyString = "`n# Dummy content to satisfy Chocolatey Tab completion installer"
         Add-Content -path $profile -value $dummyString
         $ISEprofile = (Split-Path -leaf $profile) -replace 'PowerShell_profile.ps1', 'PowerShellISE_profile.ps1'
@@ -44,11 +45,17 @@ Start-Transcript -path C:\bb\setup_transcript.txt -IncludeInvocationHeader -Appe
 
     function Initialize-Modules {
 
-        Install-PackageProvider -name NuGet -minimumVersion 2.8.5.208 -force -verbose
+        $Nuget = Get-PackageProvider -listAvailable | Where-Object Name -eq 'NuGet' | Sort-Object -descending Version
+        if (-not $Nuget -or $Nuget[0].Version -lt [System.Version]'2.8.5.210') {
+            Install-PackageProvider -name NuGet -minimumVersion 2.8.5.208 -force -verbose
+        }    
         Set-PSRepository -name 'psGallery' -installationPolicy Trusted
 
-        Install-Module PowershellGet, SecurityFever -force
-        Import-Module PowershellGet, SecurityFever -force
+        if ((Get-Module PowershellGet -listAvailable | Sort -descending Version)[0].Version -lt [System.Version]'1.5.0.0') {
+            Install-Module PowershellGet -force
+        }
+        Install-Module SecurityFever
+        Import-Module PowershellGet, SecurityFever
 
     }
 
@@ -62,14 +69,16 @@ Start-Transcript -path C:\bb\setup_transcript.txt -IncludeInvocationHeader -Appe
 "initialize-modules.ps1: install Chocolatey & basic packages Start" | Write-Verbose
 
     function Install-Chocolatey {
-        Invoke-Expression (New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1') -verbose
+        Invoke-WebRequest -useBasicParsing https://chocolatey.org/install.ps1 | Invoke-Expression -verbose
      
-	    Install-PackageProvider ChocolateyGet -force -verbose
-        Import-PackageProvider ChocolateyGet -force
+	    Install-PackageProvider ChocolateyGet -verbose
+        Import-PackageProvider ChocolateyGet
     }
 
     Install-Chocolatey
     Install-ChocolateyPackage -package $Packages.Chocolatey.Bootstrap
+    . $profile
+    RefreshEnv
 
 "initialize-modules.ps1: install Chocolatey & basic packages Finish" | Write-Verbose
 #endregion install Chocolatey & basic packages
@@ -79,21 +88,9 @@ Start-Transcript -path C:\bb\setup_transcript.txt -IncludeInvocationHeader -Appe
 #region install Git
 "initialize-modules.ps1: install Git Start"  | Write-Verbose
 
-<#
-    $installGit = {
-        Start-Transcript -path C:\bb\setup_transcript_git.txt -IncludeInvocationHeader -Append
-
-        $Packages = Import-PowerShellDataFile c:\bb\packages.psd1
-        . c:\bb\install-chocolateyPackages.ps1
-
-        Install-ChocolateyPackage -package $Packages.chocolatey.Git
-
-        Stop-Transcript
-    }
-    Start-Job -name installGit -scriptBlock $installGit
-#>
-
     Install-ChocolateyPackage -package $Packages.chocolatey.Git
+
+    RefreshEnv
 
 "initialize-modules.ps1: install Git Finish" | Write-Verbose
 #endregion install Git
@@ -102,123 +99,18 @@ Start-Transcript -path C:\bb\setup_transcript.txt -IncludeInvocationHeader -Appe
 
 #region install Scoop
 "initialize-modules.ps1: install scoop Start" | Write-Verbose
-
-    function Install-ScoopPackage {
-
-        [CmdletBinding(
-            SupportsShouldProcess,
-            PositionalBinding = $false,
-            ConfirmImpact = 'Medium'
-        )]
-
-	    PARAM(
-            [Parameter( Mandatory,
-                Position = 0,
-                HelpMessage = 'Enter the name of Scoop package',
-                ValueFromPipeline,
-                ValueFromPipelineByPropertyName )]
-            [Alias( 'name', 'packageName' )]
-            [ValidateScript({
-                foreach ($parameter in $_) {
-                    if( $parameter.GetType().Name -ne 'String' -and
-                        $parameter.GetType().Name -ne 'Hashtable'
-                    ) {
-                        throw "Unknown argument type $( $parameter.GetType().Name )"
-                    }
-
-                    if( $parameter.GetType().Name -eq 'Hashtable' -and
-                        'Name' -notIn $parameter.Keys 
-                    ){
-                        throw "Package name is missing in [$($parameter.Keys -join ', ')]"
-                    }
-                }
-                return $True
-            })]
-		    [Object[]] 
-            $package
-	    )
-
-
-        BEGIN {
-            $allAttributes = 'Name', 'Options'
-            $allOptions = , 'global'
-        }
-	
-        PROCESS
-        {
-            $shouldProcess = $psCmdlet.ShouldProcess(
-                "[$( $MyInvocation.MyCommand )] : Install packages from Scoop repositories",
-                "Install package(s) [$($package -join ', ')] from Scoop repositories? ",
-                '3rd party Software installation Warning!'
-            )
-            	        
-            foreach ($1package in $package) 
-            {
-                $command = "scoop install" 
-
-                if ($1package.GetType().Name -eq 'Hashtable')
-                {
-                    if ('Options' -in $1package.Keys)
-                    {
-                        # normalization: convert '  opTiOn1 ' and '-opTIOn2  ' to '--option1' and '--option2'
-                        $normalizedOptions = $1package.options | 
-                                ForEach-Object { 
-                                    $_.Trim().ToLower() -replace '^-?\s*([^- ]+)$', '--$1' 
-                                }
-
-                        "Options: " | Write-Verbose; $normalizedOptions | Write-Verbose
-
-                        foreach ($option in $normalizedOptions) 
-                        {
-                            if ( $option.Remove(0,2) -notIn $allOptions ) {
-                                "Install-ScoopPackage(): Unknown option in $($1package.Name): '$option' " | Write-Warning
-                            } else {
-                                $command += ' ' + $option
-                            }
-                        }
-                                        
-                    } else {
-                        $1package.options = @()
-                    }
-                    
-                    $command += ' ' + $1package['name'].Trim()
-                    if ($1package.Keys.Count -gt $allAttributes.Count) 
-                    {
-                        $unknownAttributes = $1package.Keys | ForEach-Object {
-                            if ($_ -notIn $allAttributes) {
-                                $_
-                            }
-                        }
-                        "Install-ScoopPackage(): Unknown package attribute(s) in $($1package.Name): `'$( $unknownAttributes -join ', ')`' " | Write-Warning
-                    } 
-                }
-
-                if ($shouldProcess) {
-                    Invoke-Expression -command $command
-                } else {
-                    "Command to be executed: $command"
-                }  
-            }
-        }
-
-        END {}
+    
+    if (-not (Test-Path Env:Scoop_Global)) {
+	    New-ItemProperty -path 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Environment' -name scoop_GLOBAL -propertyType ExpandString -value '%ProgramData%\scoop'  
     }
 
-
-	$parameters = @{
-		path = 		    'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Environment'
-		name = 		    'SCOOP_GLOBAL' 
-		propertyType = 	'ExpandString' 
-		value = 	    "${ENV:PROGRAMDATA}\scoop"
-	}
-	New-ItemProperty @parameters -force
-
-	Invoke-Expression (New-Object System.Net.WebClient).DownloadString('https://get.scoop.sh') -verbose
+    Invoke-WebRequest -useBasicParsing https://get.scoop.sh | Invoke-Expression -verbose
+    RefreshEnv
 
     scoop bucket add Extras
     scoop bucket add Nirsoft
 
-    Install-ScoopPackage $Packages.Scoop
+    Install-ScoopPackage -package $Packages.Scoop
 
 "initialize-modules.ps1: install scoop Finish" | Write-Verbose
 #endregion install Scoop
@@ -232,7 +124,7 @@ Start-Transcript -path C:\bb\setup_transcript.txt -IncludeInvocationHeader -Appe
         Start-Transcript -path C:\bb\setup_transcript_light.txt -IncludeInvocationHeader -Append
 
         $Packages = Import-PowerShellDataFile c:\bb\packages.psd1
-        . c:\bb\install-chocolateyPackages.ps1
+        . c:\bb\lib\install-packages.ps1
 
         Install-ChocolateyPackage -package $packages.chocolatey.Light
 
@@ -251,7 +143,7 @@ Start-Transcript -path C:\bb\setup_transcript.txt -IncludeInvocationHeader -Appe
         Start-Transcript -path C:\bb\setup_transcript_extra.txt -IncludeInvocationHeader -Append
 
         $Packages = Import-PowerShellDataFile c:\bb\packages.psd1
-        . c:\bb\install-chocolateyPackages.ps1
+        . c:\bb\lib\install-packages.ps1
 
         Install-ChocolateyPackage -package $Packages.chocolatey.Extra
 

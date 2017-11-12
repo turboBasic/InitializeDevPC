@@ -1,6 +1,14 @@
-﻿Start-Transcript -path C:\bb\setup_transcript.txt -IncludeInvocationHeader -Append
+﻿$Debug = $True
+$VerbosePreference = 'Continue'
+
+. c:\bb\lib\install-packages.ps1
+$Packages = Import-PowerShellDataFile c:\bb\packages.psd1
+
+Start-Transcript -path C:\bb\setup_transcript_ttt.txt -IncludeInvocationHeader -Append
+
 
 #region Basic system tasks
+    "initialize-modules.ps1: Basic system tasks Start" | Write-Verbose
 
     function Set-KeyboardLayout {
         $currentL = (Get-WinUserLanguageList)
@@ -15,103 +23,97 @@
         Set-ItemProperty -path $RegKey -name 'Layout HotKey' -value '1'
     }
 
-
     Set-KeyboardLayout
 
+    if (-not( Test-Path $profile)) {
+        New-Item -path (Split-Path -parent $profile) -itemType Directory -errorAction SilentlyContinue
+        New-Item -path $profile -itemType File
+        $dummyString = "`n# Dummy content to satisfy Chocolatey Tab completion installer"
+        Add-Content -path $profile -value $dummyString
+        $ISEprofile = (Split-Path -leaf $profile) -replace 'PowerShell_profile.ps1', 'PowerShellISE_profile.ps1'
+        $ISEprofile = Join-Path (Split-Path -parent $profile) $ISEprofile
+        Add-Content -path $ISEprofile -value $dummyString
+    }
+
+    "initialize-modules.ps1: Basic system tasks Finish" | Write-Verbose
 #endregion Basic system tasks
 
 
-#region Modules installation
+
+#region initialize modules
+"initialize-modules.ps1: Initialize modules Start" | Write-Verbose
 
     function Initialize-Modules {
 
-        Install-PackageProvider -name NuGet -minimumVersion 2.8.5.208 -force -verbose
+        $Nuget = Get-PackageProvider -listAvailable | Where-Object Name -eq 'NuGet' | Sort-Object -descending Version
+        if (-not $Nuget -or $Nuget[0].Version -lt [System.Version]'2.8.5.210') {
+            Install-PackageProvider -name NuGet -minimumVersion 2.8.5.208 -force -verbose
+        }    
         Set-PSRepository -name 'psGallery' -installationPolicy Trusted
 
-        Install-Module PowershellGet, SecurityFever -force
-        Import-Module PowershellGet, SecurityFever -force
+        if ((Get-Module PowershellGet -listAvailable | Sort -descending Version)[0].Version -lt [System.Version]'1.5.0.0') {
+            Install-Module PowershellGet -force
+        }
+        Install-Module SecurityFever
+        Import-Module PowershellGet, SecurityFever
 
     }
-
-
-    function Install-Chocolatey {
-        Invoke-Expression (New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1') -verbose
-     
-	    Install-PackageProvider ChocolateyGet -force -verbose
-        Import-PackageProvider ChocolateyGet -force
-    }
-
-
-
 
     Initialize-Modules
 
-    $packages = Import-PowerShellDataFile "$psScriptRoot\packages.psd1"
-
-    #region install Chocolatey & basic packages
-        Install-Chocolatey
-        c:\bb\Install-ChocolateyPackages.ps1 -package $packages.Chocolatey.Bootstrap
-    #endregion install Chocolatey & basic packages
+"initialize-modules.ps1: Initialize modules Finish" | Write-Verbose
+#endregion initialize modules
 
 
-#endregion
+
+#region install Chocolatey & basic packages
+"initialize-modules.ps1: install Chocolatey & basic packages Start" | Write-Verbose
+
+    function Install-Chocolatey {
+        Invoke-WebRequest -useBasicParsing https://chocolatey.org/install.ps1 | Invoke-Expression -verbose
+     
+	    Install-PackageProvider ChocolateyGet -verbose
+        Import-PackageProvider ChocolateyGet
+    }
+
+    Install-Chocolatey
+    Install-ChocolateyPackage -package $Packages.Chocolatey.Bootstrap
+    . $profile
+    RefreshEnv
+
+"initialize-modules.ps1: install Chocolatey & basic packages Finish" | Write-Verbose
+#endregion install Chocolatey & basic packages
+
+
+
+#region install Git
+"initialize-modules.ps1: install Git Start"  | Write-Verbose
+
+    Install-ChocolateyPackage -package $Packages.chocolatey.Git
+
+    RefreshEnv
+
+"initialize-modules.ps1: install Git Finish" | Write-Verbose
+#endregion install Git
+
 
 
 #region install Scoop
-
-    function Install-ScoopPackages {
-	    PARAM(
-		    [Parameter( Mandatory )]
-		    [Object[]] $package
-	    )
-
-        $allOptions = , 'global'
-	
-	    $package | ForEach-Object { 
-            $command = "scoop install" 
-            if ($_.options) 
-            {
-                if ($_.name) {
-                    $command += ' ' + $_.name.Trim()
-                } else {
-                    $dump = ($_ | Format-List | Out-String).Trim()
-                    throw "Package name is missing in Install-ScoopPackages():`n$dump"
-                }
-
-                foreach ($option in $_.options) 
-                {
-                    $normOption = $option.Trim().ToLower()
-                    if ( $normOption -in $allOptions ) {
-                        $command += " --$normOption "
-                    } else {
-                        throw "Unknown option '$normOption' for Install-ScoopPackages()"
-                    }
-                }
-            } else {
-                $command += ' ' + $_.Trim()
-            }
-            Invoke-Expression -command $command
-        }
+"initialize-modules.ps1: install scoop Start" | Write-Verbose
+    
+    if (-not (Test-Path Env:Scoop_Global)) {
+	    New-ItemProperty -path 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Environment' -name scoop_GLOBAL -propertyType ExpandString -value '%ProgramData%\scoop'  
     }
 
-
-	$params = @{
-		path = 		    'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Environment'
-		name = 		    'SCOOP_GLOBAL' 
-		propertyType = 	'ExpandString' 
-		value = 	    "${ENV:PROGRAMDATA}\scoop"
-	}
-	New-ItemProperty @params -force
-
-	Invoke-Expression (New-Object System.Net.WebClient).DownloadString('https://get.scoop.sh') -verbose
+    Invoke-WebRequest -useBasicParsing https://get.scoop.sh | Invoke-Expression -verbose
+    RefreshEnv
 
     scoop bucket add Extras
     scoop bucket add Nirsoft
 
-    $packages = Import-PowerShellDataFile "c:\bb\packages.psd1"
-    Install-ScoopPackages $packages.Scoop
+    Install-ScoopPackage -package $Packages.Scoop
 
+"initialize-modules.ps1: install scoop Finish" | Write-Verbose
 #endregion install Scoop
-
 
 Stop-Transcript
