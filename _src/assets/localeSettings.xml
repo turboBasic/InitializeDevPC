@@ -1,0 +1,85 @@
+<gs:GlobalizationServices xmlns:gs="urn:longhornGlobalizationUnattend">   
+  <gs:UserList>  
+    <gs:User UserID="Current" CopySettingsToDefaultUserAcct="true" CopySettingsToSystemAcct="true"/>   
+  </gs:UserList>
+  <gs:SystemLocale>uk-UA</gs:SystemLocale>
+  <gs:UserLocale>
+    <gs:Locale Name="en-US" SetAsCurrent="true"> 
+            <!--  https://msdn.microsoft.com/en-us/library/bb507201.aspx -->
+            <!--
+            The <gs:Locale> entity has an optional child element that can be specified as either 
+            <gs:Win32> or <gs:Framework>*. These elements contain a list of child elements that 
+            represent the list of settings to be changed. One or many may be changed simultaneously
+        
+            Win32 Name          .NET Framework Name         NLS Identifier (LCTYPE)
+            
+            sSort               AlternateSort               * LOCALE_SSORTNAME
+            sList               ListSeparator               LOCALE_SLIST
+            sDecimal            NumberDecimalSeparator      LOCALE_SDECIMAL
+            sThousand           NumberGroupSeparator        LOCALE_STHOUSAND
+            sGrouping           NumberGroupSizes            LOCALE_SGROUPING
+            iDigits             NumberDecimalDigits         LOCALE_IDIGITS
+            iNegNumber          NegativeNumberPattern       LOCALE_INEGNUMBER
+            sNegativeSign       NegativeSign                LOCALE_SNEGATIVESIGN
+            sPositiveSign       PositiveSign                LOCALE_SPOSITIVESIGN
+            sCurrency           CurrencySymbol              LOCALE_SCURRENCY
+            sMonDecimalSep      CurrencyDecimalSeparator    LOCALE_SMONDECIMALSEP
+            sMonThousandSep     CurrencyGroupSeparator      LOCALE_SMONTHOUSANDSEP
+            sMonGrouping        CurrencyGroupSizes          LOCALE_SMONGROUPING
+            iCurrDigits         CurrencyDecimalDigits       LOCALE_ICURRDIGITS
+            iCurrency           CurrencyPositivePattern     LOCALE_ICURRENCY
+            iNegCurr            CurrencyNegativePattern     LOCALE_INEGCURR
+            iLZero              LeadingZero                 LOCALE_ILZERO
+            sTimeFormat         TimePattern                 LOCALE_STIMEFORMAT
+            s1159               AMDesignator                LOCALE_S1159
+            s2359               PMDesignator                LOCALE_S2359
+            sShortDate          ShortDatePattern            LOCALE_SSHORTDATE
+            sLongDate           LongDatePattern             LOCALE_SLONGDATE
+            iCalendarType       Calendar                    LOCALE_ICALENDARTYPE
+            iFirstDayOfWeek     FirstDayOfWeek              LOCALE_IFIRSTDAYOFWEEK
+            iFirstWeekOfYear    CalendarWeekRule            LOCALE_IFIRSTWEEKOFYEAR
+            sNativeDigits       NativeDigits                LOCALE_SNATIVEDIGITS
+            iDigitSubstitution  DigitSubstitution           LOCALE_IDIGITSUBSTITUTION
+            iMeasure            IsMetric                    LOCALE_IMEASURE
+            -->
+        <gs:Framework>
+            <gs:CalendarWeekRule>0</gs:CalendarWeekRule>
+            <gs:CurrencyDecimalDigits>2</gs:CurrencyDecimalDigits>
+            <gs:CurrencyDecimalSeparator>.</gs:CurrencyDecimalSeparator>
+            <gs:CurrencyGroupSeparator> </gs:CurrencyGroupSeparator>
+            <gs:CurrencyGroupSizes>3</gs:CurrencyGroupSizes>
+            <gs:CurrencyNegativePattern>1</gs:CurrencyNegativePattern>
+            <gs:CurrencyPositivePattern>0</gs:CurrencyPositivePattern>
+            <gs:CurrencySymbol>₴</gs:CurrencySymbol>
+            <gs:DigitSubstitution>1</gs:DigitSubstitution>
+            <gs:FirstDayOfWeek>0</gs:FirstDayOfWeek>
+            <gs:IsMetric>0</gs:IsMetric>
+            <gs:LeadingZero>1</gs:LeadingZero>
+            <gs:ListSeparator>;</gs:ListSeparator>
+            <gs:LongDatePattern>dddd, MMMM d, yyyy</gs:LongDatePattern>
+            <gs:LongTimePattern>HH:mm:ss</gs:LongTimePattern>
+            <gs:NativeDigits>0123456789</gs:NativeDigits>
+            <gs:NegativeSign>-</gs:NegativeSign>
+            <gs:NumberDecimalSeparator>.</gs:NumberDecimalSeparator>
+            <gs:NumberGroupSeparator> </gs:NumberGroupSeparator>
+            <gs:NumberGroupSizes>3</gs:NumberGroupSizes>
+            <gs:NumberDecimalDigits>2</gs:NumberDecimalDigits>
+            <gs:NumberNegativePattern>1</gs:NumberNegativePattern>
+            <gs:PositiveSign>+</gs:PositiveSign>
+            <gs:ShortDatePattern>yyyy-MM-dd</gs:ShortDatePattern>
+            <gs:ShortTimePattern>HH:mm</gs:ShortTimePattern>
+        </gs:Framework>
+    </gs:Locale>
+  </gs:UserLocale>
+  <gs:LocationPreferences>
+    <gs:GeoID Value="244"/> <!-- https://msdn.microsoft.com/en-us/library/dd374073.aspx -->
+  </gs:LocationPreferences>
+  <gs:InputPreferences>
+    <!-- en-US International--><gs:InputLanguageID Action="add" ID="0409:00020409" Default="true"/>
+    <!-- en-US              --><gs:InputLanguageID Action="remove" ID="0409:00000409"/>
+    <gs:InputLanguageID Action="add" ID="0422:00000422"/>
+    <!-- uk-UA Enhanced     --><gs:InputLanguageID Action="add" ID="0422:00020422"/>
+    <!-- uk-UA Russian      --><gs:InputLanguageID Action="add" ID="0422:00000419"/>
+    <!-- uk-UA              --><gs:InputLanguageID Action="remove" ID="0422:00000422"/>
+    </gs:InputPreferences>
+</gs:GlobalizationServices>

@@ -78,28 +78,42 @@
 	            'Kdiff3', 
                 'WinSCP.portable', 
                 'Lepton', 
-                'jq' 	
+                'jq',
+                'zeal',
+                'devdocs-app' 	
         )
     }
 
-    scoop = @(
+    scoop = @{
 
-        # Registry, Environment, System Management utilities	
-            @{ 
-                Name='which'
-                Options='global' 
-            },
-            @{ 
-                Name='sudo'
-                Options='global' 
-            },
+        Basic = @(
 
-        # Nirsoft utilities
-	        'Filetypesman', 
-            'ShellExView',
-	        'ShellMenuView', 
-            'RegDllView',
-	        'OpenedFilesView'
-    )
+            # Registry, Environment, System Management utilities	
+                @{ 
+                    Name =      'which'
+                    Options =   'global'
+                },
+                @{ 
+                    Name =      'sudo'
+                    Options =   'global' 
+                },
+
+            # Nirsoft utilities
+	            'Filetypesman', 
+                'ShellExView',
+	            'ShellMenuView', 
+                'RegDllView',
+	            'OpenedFilesView'
+        )
+
+        Extra = @(
+        
+            @{
+                Name =      'firefox-developer'                Options =   'global'
+            }
+        
+        )
+
+    }
 
 }

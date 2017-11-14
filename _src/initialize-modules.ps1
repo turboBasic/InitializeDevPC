@@ -11,7 +11,7 @@ Start-Transcript -path C:\bb\setup_transcript.txt -IncludeInvocationHeader -Appe
     "initialize-modules.ps1: Basic system tasks Start" | Write-Verbose
 
     function Set-KeyboardLayout {
-        $currentL = (Get-WinUserLanguageList)
+        $currentL = Get-WinUserLanguageList
         $currentL[0].InputMethodTips.Clear()
         $currentL[0].InputMethodTips.Add('0409:00020409')
         $currentL += New-WinUserLanguageList uk-UA
@@ -104,13 +104,19 @@ Start-Transcript -path C:\bb\setup_transcript.txt -IncludeInvocationHeader -Appe
 	    New-ItemProperty -path 'HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Environment' -name scoop_GLOBAL -propertyType ExpandString -value '%ProgramData%\scoop'  
     }
 
-    Invoke-WebRequest -useBasicParsing https://get.scoop.sh | Invoke-Expression -verbose
-    RefreshEnv
+    try {
+        if (Test-Path (scoop which scoop)) {
+            'Scoop is already installed' | Write-Verbose
+        }
+    } catch {
+        Invoke-WebRequest -useBasicParsing https://get.scoop.sh | Invoke-Expression -verbose
+        RefreshEnv
+    }
 
     scoop bucket add Extras
     scoop bucket add Nirsoft
 
-    Install-ScoopPackage -package $Packages.Scoop
+    Install-ScoopPackage -package $Packages.Scoop.Basic
 
 "initialize-modules.ps1: install scoop Finish" | Write-Verbose
 #endregion install Scoop
