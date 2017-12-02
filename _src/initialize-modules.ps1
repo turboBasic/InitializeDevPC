@@ -46,7 +46,9 @@ Start-Transcript -path C:\bb\setup_transcript.txt -IncludeInvocationHeader -Appe
     function Initialize-Modules {
 
         $Nuget = Get-PackageProvider -listAvailable | Where-Object Name -eq 'NuGet' | Sort-Object -descending Version
-        if (-not $Nuget -or $Nuget[0].Version -lt [System.Version]'2.8.5.210') {
+        if ( -not $Nuget -or 
+             $Nuget[0].Version -lt [System.Version]'2.8.5.210'
+        ){
             Install-PackageProvider -name NuGet -minimumVersion 2.8.5.208 -force -verbose
         }    
         Set-PSRepository -name 'psGallery' -installationPolicy Trusted

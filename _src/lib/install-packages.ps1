@@ -1,4 +1,40 @@
 ﻿function Install-ChocolateyPackage {
+<#
+        .SYNOPSIS
+Installs packages from Chocolatey gallery with pipeline support and ability to pass advanced parameters individually to each package installer
+
+        .DESCRIPTION
+Installs packages from Chocolatey gallery with pipeline support and ability to pass advanced parameters individually to each package installer
+
+        .INPUTS
+[System.String[]], [System.Hashtable[]]
+
+        .OUTPUTS
+[System.Void]
+
+        .PARAMETER Package
+The names of package to install. Can be a single package or comma-separated list of packages.
+In case of default install options only string name of package is required.
+If you want to pass advanced install options to a package, use hashtable of the following structure instead:
+
+@{
+    Name =    'Package Name'
+    Options = 'option1', 'optionN'
+}
+
+        .EXAMPLE
+Install-ChocolateyPackage 7zip.install, NotepadPlusPlus.install
+
+        .EXAMPLE
+Install-ChocolateyPackage 7zip.install, @{ Name ='NotepadPlusPlus.install'; Options = '--x86' }
+
+        .NOTES
+(c) 2017 turboBasic https://github.com/turboBasic
+
+        .LINK
+https://github.com/turboBasic/
+
+#>
 
     [CmdletBinding(
         SupportsShouldProcess,
@@ -17,7 +53,7 @@
             foreach ($parameter in $_) {
                 if( $parameter.GetType().Name -ne 'String' -and
                     $parameter.GetType().Name -ne 'Hashtable'
-                ) {
+                ){
                     throw "Unknown argument type $( $parameter.GetType().Name )"
                 }
 
@@ -40,9 +76,16 @@
 
     PROCESS
     {
+        $packageList = $package | ForEach-Object { 
+            $( if ($_.GetType().Name -eq 'Hashtable') 
+               { $_.Name } 
+               else 
+               { $_ }
+            )
+        }
         $shouldProcess = $psCmdlet.ShouldProcess(
                 "[$( $MyInvocation.MyCommand )] : Install packages from Chocolatey gallery",
-                "Install package(s) [$($package -join ', ')] from Chocolatey gallery? ",
+                "Install package(s) [$packageList -join ', '] from Chocolatey gallery? ",
                 '3rd party Software installation Warning!'
         )
 
@@ -61,7 +104,7 @@
                     # normalization: convert '  opTiOn1 ' and '-opTIOn2  ' to '--option1' and '--option2'
                     $normalizedOptions = $1package.options | 
                             ForEach-Object { 
-                                $_.Trim().ToLower() -replace '^-?\s*([^- ]+)$', '--$1' 
+                                $_.Trim().ToLower() -replace '^-?\s*([^- ]\S+)$', '--$1' 
                             }
 
                     "Options: " | Write-Verbose; $normalizedOptions | Write-Verbose
